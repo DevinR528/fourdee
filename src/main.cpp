@@ -1,0 +1,166 @@
+#include "glad/glad.h"
+#include "glm/glm.hpp"
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+#include <GLFW/glfw3.h>
+#include <iostream>
+
+#include "shader.hpp"
+
+void framebuffer_size_callback(GLFWwindow *window, int width, int height);
+void processInput(GLFWwindow *window);
+
+const GLuint SCR_WIDTH = 800;
+const GLuint SCR_HEIGHT = 600;
+
+float xrot = 0.0;
+float yrot = 0.0;
+
+float tra_x = 0.0;
+float tra_y = 0.0;
+float tra_z = 0.0;
+
+int main() {
+  // initialize and configure
+  glfwInit();
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+  glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
+
+  // glfw window creation
+  // --------------------
+  GLFWwindow *window =
+      glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "fordee", NULL, NULL);
+  if (window == NULL) {
+    std::cout << "Failed to create GLFW window" << std::endl;
+    glfwTerminate();
+    return -1;
+  }
+
+  glfwMakeContextCurrent(window);
+  glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+
+  // glad: load all OpenGL function pointers
+  // ---------------------------------------
+  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+    std::cout << "Failed to initialize GLAD" << std::endl;
+    return -1;
+  }
+
+  printf("Renderer: %s\n", glGetString(GL_RENDERER));
+  printf("OpenGL version supported %s\n", glGetString(GL_VERSION));
+
+  Shader vertex_shader = Shader("src/shaders/vert.vs", GL_VERTEX_SHADER);
+  Shader fragment_shader = Shader("src/shaders/frag.fs", GL_FRAGMENT_SHADER);
+
+  // link shaders
+  Shader shader_prog = vertex_shader.link(fragment_shader.id());
+
+  GLfloat vertices[] = {
+    //     A              B
+    -1., -1.,  1.,    1., -1.,  1.,
+    //     B              C
+     1., -1.,  1.,    1.,  1.,  1.,
+    //     C              D
+     1.,  1.,  1.,   -1.,  1.,  1.,
+    //     D              A
+     -1.,  1.,  1.,  -1., -1.,  1.,
+    //     A              F
+    -1., -1.,  1.,   -1., -1., -1.,
+    //     B              G
+     1., -1.,  1.,    1., -1., -1.,
+    //     C              H
+     1.,  1.,  1.,    1.,  1., -1.,
+    //     D              E
+     -1.,  1.,  1.,  -1.,  1., -1.,
+    //     E              F
+    -1.,  1., -1.,   -1., -1., -1.,
+    //     F              G
+    -1., -1., -1.,    1., -1., -1.,
+    //     G              H
+     1., -1., -1.,    1.,  1., -1.,
+     //    H              E
+     1.,  1., -1.,    -1.,  1., -1.,
+  };
+
+  GLuint VBO, VAO;
+  glGenVertexArrays(1, &VAO);
+  glGenBuffers(1, &VBO);
+  // bind the Vertex Array Object first, then bind and set vertex buffer(s), and
+  // then configure vertex attributes(s).
+  glBindVertexArray(VAO);
+
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+  glEnableVertexAttribArray(0);
+
+  // This is already registered so we can unbind it
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  // Incase we have more VAO's unbind
+  glBindVertexArray(0);
+
+  while (!glfwWindowShouldClose(window)) {
+    processInput(window);
+
+    // Render
+    glClearColor(0.2, 0.3, 0.3, 1.0);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    // Create transformations
+    // Make sure to initialize matrix to identity matrix first
+    glm::mat4 transform = glm::mat4(1.0);
+    transform = glm::translate(transform, glm::vec3(tra_x, tra_y, tra_z));
+    transform = glm::rotate(transform, xrot, glm::vec3(1.0, 0.0, 0.0));
+    transform = glm::rotate(transform, yrot, glm::vec3(0.0, 1.0, 0.0));
+
+    // Draw
+    shader_prog.activate();
+
+    // Ready shit for GPU
+    GLuint transformLoc = glGetUniformLocation(shader_prog.id(), "transform");
+    glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
+    // Could only bind once but a more complicated prog might have multiple VAO's
+    glBindVertexArray(VAO);
+
+    // Do the damn thang
+    glDrawArrays(GL_LINES, 0, 24);
+
+    // Swap buffers and poll IO events to ready for next go round
+    glfwSwapBuffers(window);
+    glfwPollEvents();
+  }
+
+  glDeleteVertexArrays(1, &VAO);
+  glDeleteBuffers(1, &VBO);
+  glfwTerminate();
+  // `shader_prog` is deleted on end of scope (in it's destructor)
+
+  return 0;
+}
+
+// Input like keyboard/mouse/etc.
+void processInput(GLFWwindow *window) {
+  if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    glfwSetWindowShouldClose(window, true);
+  if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) tra_y += 0.1;
+  if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) tra_y -= 0.1;
+  if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) tra_x -= 0.1;
+  if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) tra_x += 0.1;
+
+  if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS) xrot -= 0.1;
+  if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS) xrot += 0.1;
+
+  if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS) yrot -= 0.1;
+  if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS) yrot += 0.1;
+}
+
+// If the window has changed size. This is registered with GLFW.
+void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
+  // make sure the viewport matches the new window dimensions; note that width
+  // and height will be significantly larger than specified on retina displays.
+  glViewport(0, 0, width, height);
+}
