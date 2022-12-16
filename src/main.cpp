@@ -1,7 +1,8 @@
+// These have to be included before GLFW or any other gl* libraries
 #include "glad/glad.h"
 #include "glm/glm.hpp"
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
+#include "glm/gtc/matrix_transform.hpp"
+#include "glm/gtc/type_ptr.hpp"
 
 #include <GLFW/glfw3.h>
 #include <iostream>
@@ -32,7 +33,7 @@ int main() {
   // glfw window creation
   // --------------------
   GLFWwindow *window =
-      glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "fordee", NULL, NULL);
+      glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "ForDee", NULL, NULL);
   if (window == NULL) {
     std::cout << "Failed to create GLFW window" << std::endl;
     glfwTerminate();
@@ -52,37 +53,40 @@ int main() {
   printf("Renderer: %s\n", glGetString(GL_RENDERER));
   printf("OpenGL version supported %s\n", glGetString(GL_VERSION));
 
-  Shader vertex_shader = Shader("src/shaders/vert.vs", GL_VERTEX_SHADER);
-  Shader fragment_shader = Shader("src/shaders/frag.fs", GL_FRAGMENT_SHADER);
+  Shader shader_prog = Shader("src/shaders/vert.vs", "src/shaders/frag.fs", "src/shaders/fourdee.gs");
 
-  // link shaders
-  Shader shader_prog = vertex_shader.link(fragment_shader.id());
+//   GLfloat vertices[] = {
+//     //     A              B
+//     -1., -1.,  1.,    1., -1.,  1.,
+//     //     B              C
+//      1., -1.,  1.,    1.,  1.,  1.,
+//     //     C              D
+//      1.,  1.,  1.,   -1.,  1.,  1.,
+//     //     D              A
+//      -1.,  1.,  1.,  -1., -1.,  1.,
+//     //     A              F
+//     -1., -1.,  1.,   -1., -1., -1.,
+//     //     B              G
+//      1., -1.,  1.,    1., -1., -1.,
+//     //     C              H
+//      1.,  1.,  1.,    1.,  1., -1.,
+//     //     D              E
+//      -1.,  1.,  1.,  -1.,  1., -1.,
+//     //     E              F
+//     -1.,  1., -1.,   -1., -1., -1.,
+//     //     F              G
+//     -1., -1., -1.,    1., -1., -1.,
+//     //     G              H
+//      1., -1., -1.,    1.,  1., -1.,
+//      //    H              E
+//      1.,  1., -1.,    -1.,  1., -1.,
+//   };
 
   GLfloat vertices[] = {
-    //     A              B
-    -1., -1.,  1.,    1., -1.,  1.,
-    //     B              C
-     1., -1.,  1.,    1.,  1.,  1.,
-    //     C              D
-     1.,  1.,  1.,   -1.,  1.,  1.,
-    //     D              A
-     -1.,  1.,  1.,  -1., -1.,  1.,
-    //     A              F
-    -1., -1.,  1.,   -1., -1., -1.,
-    //     B              G
-     1., -1.,  1.,    1., -1., -1.,
-    //     C              H
-     1.,  1.,  1.,    1.,  1., -1.,
-    //     D              E
-     -1.,  1.,  1.,  -1.,  1., -1.,
-    //     E              F
-    -1.,  1., -1.,   -1., -1., -1.,
-    //     F              G
-    -1., -1., -1.,    1., -1., -1.,
-    //     G              H
-     1., -1., -1.,    1.,  1., -1.,
-     //    H              E
-     1.,  1., -1.,    -1.,  1., -1.,
+    //     A                B                 C               D
+     -1., -1.,  1.,    1., -1.,  1.,     1.,  1.,  1.,    -1., 1., 1.,
+    //     E                F                 G               H
+     -1.,  1., -1.,   -1., -1., -1.,     1., -1., -1.,     1.,  1., -1.,
   };
 
   GLuint VBO, VAO;
@@ -97,6 +101,7 @@ int main() {
 
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
   glEnableVertexAttribArray(0);
+  glEnable(GL_PROGRAM_POINT_SIZE);
 
   // This is already registered so we can unbind it
   glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -117,17 +122,30 @@ int main() {
     transform = glm::rotate(transform, xrot, glm::vec3(1.0, 0.0, 0.0));
     transform = glm::rotate(transform, yrot, glm::vec3(0.0, 1.0, 0.0));
 
+    // Ready shit for GPU
+    float zero = 0.0;
+    float one = 1.0;
+    shader_prog.setMat4("transform", transform);
+    shader_prog.setMat4("xyangle", glm::mat4(
+        glm::cos(xrot), -glm::sin(xrot),   zero,   zero,
+        glm::sin(xrot),  glm::cos(xrot),   zero,   zero,
+              zero,               zero,     one,   zero,
+              zero,               zero,    zero,    one
+    ));
+    shader_prog.setMat4("zwangle", glm::mat4(
+        one, zero,     zero,            zero,
+        zero, one,     zero,            zero,
+        zero, zero, glm::cos(xrot), -glm::sin(xrot),
+        zero, zero, glm::sin(xrot),  glm::cos(xrot)
+    ));
     // Draw
     shader_prog.activate();
 
-    // Ready shit for GPU
-    GLuint transformLoc = glGetUniformLocation(shader_prog.id(), "transform");
-    glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
     // Could only bind once but a more complicated prog might have multiple VAO's
     glBindVertexArray(VAO);
 
     // Do the damn thang
-    glDrawArrays(GL_LINES, 0, 24);
+    glDrawArrays(GL_POINTS, 0, 8);
 
     // Swap buffers and poll IO events to ready for next go round
     glfwSwapBuffers(window);
@@ -137,7 +155,8 @@ int main() {
   glDeleteVertexArrays(1, &VAO);
   glDeleteBuffers(1, &VBO);
   glfwTerminate();
-  // `shader_prog` is deleted on end of scope (in it's destructor)
+  // `shader_prog` is deleted on end of scope (in it's destructor) the vertex/frag/geo shaders
+  // are deleted when linked
 
   return 0;
 }
