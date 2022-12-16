@@ -83,10 +83,10 @@ int main() {
 //   };
 
   GLfloat vertices[] = {
-    //     A                B                 C               D
-     -1., -1.,  1.,    1., -1.,  1.,     1.,  1.,  1.,    -1., 1., 1.,
-    //     E                F                 G               H
-     -1.,  1., -1.,   -1., -1., -1.,     1., -1., -1.,     1.,  1., -1.,
+    //     A                      B                      C                       D
+     -1., -1.,  1.,  1.,    1., -1.,  1.,  1.,    1.,  1.,  1.,  1.,    -1.,  1.,  1.,  1.,
+    //     E                      F                      G                       H
+     -1.,  1., -1., -1,   -1., -1., -1., -1.,     1., -1., -1., -1.,     1.,  1., -1., -1.,
   };
 
   GLuint VBO, VAO;
@@ -99,7 +99,7 @@ int main() {
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+  glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
   glEnableVertexAttribArray(0);
   glEnable(GL_PROGRAM_POINT_SIZE);
 
@@ -138,6 +138,8 @@ int main() {
         zero, zero, glm::cos(xrot), -glm::sin(xrot),
         zero, zero, glm::sin(xrot),  glm::cos(xrot)
     ));
+    shader_prog.setMat4("proj", glm::mat4(0.));
+
     // Draw
     shader_prog.activate();
 
@@ -165,8 +167,10 @@ int main() {
 void processInput(GLFWwindow *window) {
   if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     glfwSetWindowShouldClose(window, true);
+
   if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) tra_y += 0.1;
   if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) tra_y -= 0.1;
+
   if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) tra_x -= 0.1;
   if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) tra_x += 0.1;
 

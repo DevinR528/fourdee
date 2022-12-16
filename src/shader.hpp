@@ -86,7 +86,7 @@ public:
     check_error(shader_prog, "PROGRAM LINKING", "");
 
     glDeleteShader(vert);
-    glDeleteShader(vert);
+    glDeleteShader(frag);
 
     if (geo != 0) glDeleteShader(geo);
 
@@ -100,6 +100,12 @@ public:
 
   void setMat4(const std::string &name, const glm::mat4 &mat) const {
     glUniformMatrix4fv(
+        glGetUniformLocation(m_id, name.c_str()),
+        1, GL_FALSE, glm::value_ptr(mat)
+    );
+  }
+  void setMat3x4(const std::string &name, const glm::mat3x4 &mat) const {
+    glUniformMatrix3x4fv(
         glGetUniformLocation(m_id, name.c_str()),
         1, GL_FALSE, glm::value_ptr(mat)
     );
