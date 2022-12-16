@@ -119,9 +119,10 @@ int main() {
     // Make sure to initialize matrix to identity matrix first
     glm::mat4 transform = glm::mat4(1.0);
     transform = glm::translate(transform, glm::vec3(tra_x, tra_y, tra_z));
-    transform = glm::rotate(transform, xrot, glm::vec3(1.0, 0.0, 0.0));
-    transform = glm::rotate(transform, yrot, glm::vec3(0.0, 1.0, 0.0));
-    transform = glm::translate(transform, glm::vec3(0, 0, 1));
+    transform = glm::translate(transform, glm::vec3(0., 0., 1.));
+    
+    transform = glm::rotate(transform, xrot, glm::vec3(1., 0., 0.));
+    transform = glm::rotate(transform, yrot, glm::vec3(0., 1., 0.));
 
     // Ready shit for GPU
     float zero = 0.0;
@@ -176,10 +177,18 @@ void processInput(GLFWwindow *window) {
   if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) tra_x += 0.1;
 
   if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS) xrot -= 0.1;
-  if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS) xrot += 0.1;
+  if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) xrot += 0.1;
 
-  if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS) yrot -= 0.1;
   if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS) yrot += 0.1;
+  if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS) yrot -= 0.1;
+
+  if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) tra_z -= 0.1;
+  if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) tra_z += 0.1;
+
+  if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+    xrot = 0.0; yrot = 0.0;
+    tra_x = 0.0; tra_y = 0.0; tra_z = 0.0;
+  }
 }
 
 // If the window has changed size. This is registered with GLFW.
