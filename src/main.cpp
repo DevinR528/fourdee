@@ -121,6 +121,7 @@ int main() {
     transform = glm::translate(transform, glm::vec3(tra_x, tra_y, tra_z));
     transform = glm::rotate(transform, xrot, glm::vec3(1.0, 0.0, 0.0));
     transform = glm::rotate(transform, yrot, glm::vec3(0.0, 1.0, 0.0));
+    transform = glm::translate(transform, glm::vec3(0, 0, 1));
 
     // Ready shit for GPU
     float zero = 0.0;
