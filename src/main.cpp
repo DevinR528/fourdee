@@ -82,12 +82,21 @@ int main() {
 //      1.,  1., -1.,    -1.,  1., -1.,
 //   };
 
+//   GLfloat vertices[] = {
+//      -1., -1.,  1.,  1.,    1., -1.,  1.,  1.,    1.,  1.,  1.,  1.,    -1.,  1.,  1.,  1.,
+//      -1., -1., -1.,  1.,    1., -1., -1.,  1.,    1.,  1., -1.,  1.,    -1.,  1., -1.,  1.,
+
+//      -1.,  1., -1., -1,   -1., -1., -1., -1.,     1., -1., -1., -1.,     1.,  1., -1., -1.,
+//   };
+
   GLfloat vertices[] = {
-    //     A                      B                      C                       D
-     -1., -1.,  1.,  1.,    1., -1.,  1.,  1.,    1.,  1.,  1.,  1.,    -1.,  1.,  1.,  1.,
-    //     E                      F                      G                       H
-     -1.,  1., -1., -1,   -1., -1., -1., -1.,     1., -1., -1., -1.,     1.,  1., -1., -1.,
+      1.,  1.,  1.,  1.,    1., -1.,  1.,  1.,   -1., -1.,  1.,  1.,    -1.,  1.,  1.,  1.,
+      1.,  1., -1.,  1.,    1., -1., -1.,  1.,   -1., -1., -1.,  1.,    -1.,  1., -1.,  1.,
+      1.,  1.,  1., -1,     1., -1.,  1., -1.,   -1., -1.,  1., -1.,    -1.,  1.,  1., -1.,
+      1.,  1., -1., -1,     1., -1., -1., -1.,   -1., -1., -1., -1.,    -1.,  1., -1., -1.,
   };
+
+// GLfloat vertices[] = { .5,0,0,1,   0,.5,0,1,   0,0,.5,1,   0,0,0,.5 };
 
   GLuint VBO, VAO;
   glGenVertexArrays(1, &VAO);
@@ -116,29 +125,27 @@ int main() {
     glClear(GL_COLOR_BUFFER_BIT);
 
     // Create transformations
-    // Make sure to initialize matrix to identity matrix first
+    // Make sure to initialize matrix to identity, a single scalar does this
     glm::mat4 transform = glm::mat4(1.0);
-    transform = glm::translate(transform, glm::vec3(tra_x, tra_y, tra_z));
-    transform = glm::translate(transform, glm::vec3(0., 0., 1.));
-    
-    transform = glm::rotate(transform, xrot, glm::vec3(1., 0., 0.));
-    transform = glm::rotate(transform, yrot, glm::vec3(0., 1., 0.));
+    transform = glm::translate(transform, glm::vec3(0, 0, tra_z));
+    transform = glm::rotate(transform, tra_x, glm::vec3(0., 1., 0.));
+    transform = glm::rotate(transform, tra_y, glm::vec3(1., 0., 0.));
 
     // Ready shit for GPU
     float zero = 0.0;
     float one = 1.0;
     shader_prog.setMat4("transform", transform);
-    shader_prog.setMat4("xyangle", glm::mat4(
-        glm::cos(xrot), -glm::sin(xrot),   zero,   zero,
-        glm::sin(xrot),  glm::cos(xrot),   zero,   zero,
-              zero,               zero,     one,   zero,
-              zero,               zero,    zero,    one
+    shader_prog.setMat4("xzangle", glm::mat4(
+        glm::cos(xrot),  zero,  -glm::sin(xrot),  zero,
+                  zero,   one,             zero,  zero,
+        glm::sin(xrot),  zero,   glm::cos(xrot),  zero,
+                  zero,  zero,             zero,   one
     ));
-    shader_prog.setMat4("zwangle", glm::mat4(
-        one, zero,     zero,            zero,
-        zero, one,     zero,            zero,
-        zero, zero, glm::cos(xrot), -glm::sin(xrot),
-        zero, zero, glm::sin(xrot),  glm::cos(xrot)
+    shader_prog.setMat4("ywangle", glm::mat4(
+        one,             zero,  zero,             zero,
+        zero,  glm::cos(yrot),  zero,  -glm::sin(yrot),
+        zero,            zero,   one,             zero,
+        zero,  glm::sin(yrot),  zero,   glm::cos(yrot)
     ));
     shader_prog.setMat4("proj", glm::mat4(0.));
 
@@ -149,7 +156,7 @@ int main() {
     glBindVertexArray(VAO);
 
     // Do the damn thang
-    glDrawArrays(GL_POINTS, 0, 8);
+    glDrawArrays(GL_POINTS, 0, 64);
 
     // Swap buffers and poll IO events to ready for next go round
     glfwSwapBuffers(window);
@@ -176,11 +183,11 @@ void processInput(GLFWwindow *window) {
   if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) tra_x -= 0.1;
   if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) tra_x += 0.1;
 
-  if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS) xrot -= 0.1;
-  if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) xrot += 0.1;
+  if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS) xrot -= 0.01;
+  if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) xrot += 0.01;
 
-  if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS) yrot += 0.1;
-  if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS) yrot -= 0.1;
+  if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS) yrot += 0.01;
+  if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS) yrot -= 0.01;
 
   if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) tra_z -= 0.1;
   if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) tra_z += 0.1;
