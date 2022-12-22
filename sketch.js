@@ -137,6 +137,8 @@ function setup() {
      
 }
 
+var point_history = [];
+
 function draw() {
     background(0);
     scale(1, -1, 1, 1);
@@ -154,15 +156,24 @@ function draw() {
 //    point(0, 10, 0);
 //    stroke(0, 0, 200);
 //    point(0, 0, 10);
-
+    
+    var timeslice = [];
+    
     for (let i = 0; i < points.length; i++) {
         const v = points[i];
 
-        const rotationXZ = [
-            [cos(current_angleX), 0, -sin(current_angleX), 0],
+//        const rotationXZ = [
+//            [cos(current_angleX), 0, -sin(current_angleX), 0],
+//            [0, 1, 0, 0],
+//            [sin(current_angleX), 0, cos(current_angleX), 0],
+//            [0, 0, 0, 1],
+//        ];
+
+        const rotationXW = [
+            [cos(current_angleX), 0, 0, -sin(current_angleX)],
             [0, 1, 0, 0],
-            [sin(current_angleX), 0, cos(current_angleX), 0],
-            [0, 0, 0, 1],
+            [0, 0, 1, 0],
+            [sin(current_angleX), 0, 0, cos(current_angleX)],
         ];
 
         const rotationYW = [
@@ -172,7 +183,7 @@ function draw() {
             [0, sin(current_angleY), 0, cos(current_angleY)]
         ];
 
-        let rotated = matmul(rotationXZ, v);
+        let rotated = matmul(rotationXW, v);
         rotated = matmul(rotationYW, rotated);
 
         let distance = 2;
@@ -201,21 +212,49 @@ function draw() {
         }
         
         //    strokeWeight(map(projected.z, -5, 5, 2, 5));
-        strokeWeight(15);
+        strokeWeight(8);
 //        noFill();
+        timeslice.push(projected);
         point(projected.x, projected.y, projected.z);
     }
-
-//      angle = map(mouseX, 0, width, 0, -TWO_PI);
-//      angle2 = map(mouseY, 0, height, 0, TWO_PI);
-//    current_angleX += 0.001;
-//    angle2 += 0.005;
-}
-
-function connect(offset, i, j, points) {
+    
+    while (point_history.length >= 10)
+        point_history.shift();
+    
+    point_history.push(timeslice);
+    
     strokeWeight(1);
     stroke(255);
-    const a = points[i + offset];
-    const b = points[j + offset];
-    line(a.x, a.y, a.z, b.x, b.y, b.z);
+    for (var i = 0, n = point_history.length - 1; i < n; i++)
+    {
+        var current_slice = point_history[i];
+        var next_slice = point_history[i + 1];
+        
+        for (var j = 0, m = current_slice.length; j < m; j++)
+        if (j % 4 == 0)
+        {
+            const a = current_slice[j];
+            const b = next_slice[j];
+            line(a.x, a.y, a.z, b.x, b.y, b.z);
+        }
+    }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
