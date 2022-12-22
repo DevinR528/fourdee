@@ -1,14 +1,3 @@
-// Daniel Shiffman
-// http://youtube.com/thecodingtrain
-// http://codingtra.in
-// JavaScript transcription: Chuck England
-
-// Coding Challenge #113: 4D Hypercube
-// https://youtu.be/XE3YDVdQSPo
-
-// Matrix Multiplication
-// https://youtu.be/tzsgS19RRc8
-
 let current_matrix = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]];
 
 let current_cameraX = 0;
@@ -34,7 +23,6 @@ function mousePressed() {
     start_mouseY = mouseY;
     return false;
 }
-
 function mouseDragged() {
     switch (mouseButton)
     {
@@ -67,10 +55,21 @@ function mouseDragged() {
         default: break;
     }
 }
-
 function mouseReleased() {
     return false;
 }
+function keyTyped() {
+    if (key === ' ') {
+        current_matrix = [
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1]
+        ];
+        current_cameraX = 0;
+        current_cameraY = 0.4;
+    }
+  }
 
 let points = [];
 
@@ -160,21 +159,10 @@ function draw() {
     scale(1, -1, 1, 1);
     rotateX(current_cameraY);
     rotateY(current_cameraX);
+
     let projected3d = [];
-
-
-//    strokeWeight(10);
-//    stroke(200, 200, 200);
-//    point(0, 0, 0);
-//    stroke(200, 0, 0);
-//    point(10, 0, 0);
-//    stroke(0, 200, 0);
-//    point(0, 10, 0);
-//    stroke(0, 0, 200);
-//    point(0, 0, 10);
-    
     var timeslice = [];
-    
+
     for (let i = 0; i < points.length; i++) {
         const v = points[i];
 
@@ -207,7 +195,6 @@ function draw() {
         
         //    strokeWeight(map(projected.z, -5, 5, 2, 5));
         strokeWeight(8);
-//        noFill();
         timeslice.push(projected);
         point(projected.x, projected.y, projected.z);
     }
@@ -225,11 +212,13 @@ function draw() {
         var next_slice = point_history[i + 1];
         
         for (var j = 0, m = current_slice.length; j < m; j++)
-        if (j % 8 == 0)
         {
-            const a = current_slice[j];
-            const b = next_slice[j];
-            line(a.x, a.y, a.z, b.x, b.y, b.z);
+            if (j % 8 == 0)
+            {
+                const a = current_slice[j];
+                const b = next_slice[j];
+                line(a.x, a.y, a.z, b.x, b.y, b.z);
+            }
         }
     }
 }
