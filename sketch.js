@@ -9,13 +9,12 @@
 // Matrix Multiplication
 // https://youtu.be/tzsgS19RRc8
 
-let current_angleX = 0;
-let current_angleY = 0;
+let current_matrix = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]];
 
 let current_cameraX = 0;
 let current_cameraY = 0.4;
 
-var start_angleX, start_angleY;
+var start_matrix;
 var start_cameraX, start_cameraY;
 var start_mouseX, start_mouseY;
 
@@ -23,8 +22,7 @@ function mousePressed() {
     switch (mouseButton)
     {
         case LEFT:
-            start_angleX = current_angleX;
-            start_angleY = current_angleY;
+            start_matrix = current_matrix;
             break;
         case CENTER:
             start_cameraX = current_cameraX;
@@ -41,9 +39,27 @@ function mouseDragged() {
     switch (mouseButton)
     {
         case LEFT:
-            current_angleX = start_angleX + map(mouseX - start_mouseX, 0, width, 0, -TWO_PI);
-            current_angleY = start_angleY + map(mouseY - start_mouseY, 0, height, 0, +TWO_PI);
+        {
+            var delta_X = map(mouseX - start_mouseX, 0, width, 0, -TWO_PI);
+            var delta_Y = map(mouseY - start_mouseY, 0, height, 0, +TWO_PI);
+            
+            current_matrix = matmul([
+                [cos(delta_X), 0, 0, -sin(delta_X)],
+                [0, 1, 0, 0],
+                [0, 0, 1, 0],
+                [sin(delta_X), 0, 0, cos(delta_X)],
+            ], start_matrix);
+            
+            current_matrix = matmul([
+                [1, 0, 0, 0],
+                [0, cos(delta_Y), 0, -sin(delta_Y)],
+                [0, 0, 1, 0],
+                [0, sin(delta_Y), 0, cos(delta_Y)]
+            ], current_matrix);
+            
             break;
+        }
+        
         case CENTER:
             current_cameraX = start_cameraX + map(mouseX - start_mouseX, 0, width, 0, +TWO_PI);
             current_cameraY = start_cameraY + map(mouseY - start_mouseY, 0, height, 0, +TWO_PI);
@@ -162,29 +178,7 @@ function draw() {
     for (let i = 0; i < points.length; i++) {
         const v = points[i];
 
-//        const rotationXZ = [
-//            [cos(current_angleX), 0, -sin(current_angleX), 0],
-//            [0, 1, 0, 0],
-//            [sin(current_angleX), 0, cos(current_angleX), 0],
-//            [0, 0, 0, 1],
-//        ];
-
-        const rotationXW = [
-            [cos(current_angleX), 0, 0, -sin(current_angleX)],
-            [0, 1, 0, 0],
-            [0, 0, 1, 0],
-            [sin(current_angleX), 0, 0, cos(current_angleX)],
-        ];
-
-        const rotationYW = [
-            [1, 0, 0, 0],
-            [0, cos(current_angleY), 0, -sin(current_angleY)],
-            [0, 0, 1, 0],
-            [0, sin(current_angleY), 0, cos(current_angleY)]
-        ];
-
-        let rotated = matmul(rotationXW, v);
-        rotated = matmul(rotationYW, rotated);
+        var rotated = matmul(current_matrix, v);
 
         let distance = 2;
         let w = 1 / (distance - rotated.w);
@@ -231,7 +225,7 @@ function draw() {
         var next_slice = point_history[i + 1];
         
         for (var j = 0, m = current_slice.length; j < m; j++)
-        if (j % 4 == 0)
+        if (j % 8 == 0)
         {
             const a = current_slice[j];
             const b = next_slice[j];
