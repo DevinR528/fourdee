@@ -1,10 +1,18 @@
+
 #version 450 core
 layout (points) in;
-layout (points, max_vertices = 3) out;
+layout (points, max_vertices = 7) out;
 
-uniform mat4 xzangle;
-uniform mat4 ywangle;
-uniform mat3x4 proj;
+uniform mat4 cube;
+//uniform mat3x4 proj;
+
+uniform mat4 MVP;
+
+out vec3 fColor;
+
+in VS_OUT {
+    vec3 color;
+} gs_in[];
 
 float map(float value, float min1, float max1, float min2, float max2) {
   return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
@@ -12,27 +20,37 @@ float map(float value, float min1, float max1, float min2, float max2) {
 
 void main() {
 
-    vec4 vec = gl_in[0].gl_Position * .3;
-    gl_PointSize = map(vec.z, -.3, .3, 1, 10);
-    gl_Position = vec4(vec.x, vec.y, vec.z, vec.w);
-    EmitVertex();
-
-    gl_Position = vec * xzangle;
-    gl_Position = gl_Position * ywangle;
-    float dist = 3.;
-    float w = map(1. / (dist - gl_Position.w), -1, 1, -.3, .3);
-    mat4 proj = mat4(
-        w,  0., 0., 0.,
-        0., w,  0., 0.,
-        0., 0., w,  0.,
-        0., 0., 0., .3
-    );
-    vec4 p = proj * gl_Position;
-    gl_Position = vec4(p.x, p.y, p.z, p.w);
-    gl_PointSize = map(gl_Position.z, -.1, .1, 1, 10);
-    EmitVertex();
-    gl_Position = vec4(p.x, p.y, p.z, -p.w);
-    EmitVertex();
-
-    EndPrimitive();
+	gl_PointSize = 2;
+	
+	vec4 a = gl_in[0].gl_Position;
+	
+	vec4 b = cube * a;
+	
+	vec4 c = mat4(1. / (2.0 - b.w)) * b;
+	
+	vec4 d = vec4(c.x, c.y, c.z, 1);
+	
+  gl_Position = MVP * d;
+  
+  fColor = gs_in[0].color;
+  
+  EmitVertex();
+  
+//  gl_Position = MVP * (a + vec4(+0.1, 0, 0, 0)); EmitVertex();
+//  gl_Position = MVP * (a + vec4(-0.1, 0, 0, 0)); EmitVertex();
+//  gl_Position = MVP * (a + vec4(0, +0.1, 0, 0)); EmitVertex();
+//  gl_Position = MVP * (a + vec4(0, -0.1, 0, 0)); EmitVertex();
+//  gl_Position = MVP * (a + vec4(0, 0, +0.1, 0)); EmitVertex();
+//  gl_Position = MVP * (a + vec4(0, 0, -0.1, 0)); EmitVertex();
+  EndPrimitive();
 }
+
+
+
+
+
+
+
+
+
+
