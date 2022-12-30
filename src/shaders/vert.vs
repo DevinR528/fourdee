@@ -1,7 +1,6 @@
 #version 450 core
 
 layout (location = 0) in vec4 aPos;
-
 layout (location = 1) in vec3 acolor;
 
 out VS_OUT {
@@ -11,6 +10,5 @@ out VS_OUT {
 void main()
 {
     gl_Position = aPos;
-    
     vs_out.color = acolor;
 }

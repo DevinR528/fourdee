@@ -1,1 +1,1 @@
-apt install libglfw3-dev
+`sudo apt install libglfw3-dev`
