@@ -73,7 +73,7 @@ $(buildprefix)/%.o $(buildprefix)/%.d: %.cpp | $(buildprefix)/%/
 	@ $(CC) -c $(CPPFLAGS) $(CXXFLAGS) $< -MD -o $(buildprefix)/$*.o $(ON_ERROR)
 
 format:
-	find -name '*.cpp' -o -name '*.hpp' | xargs -d \\n clang-format-11 -i --verbose
+	find -name '*.cpp' | xargs -d \\n clang-format-11 -i --verbose
 
 clean:
 	rm -rf build
