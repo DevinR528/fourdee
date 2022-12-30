@@ -7,11 +7,20 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 
+#include "points.hpp"
 #include "shader.hpp"
+
+#ifdef __GNUC__
+#define UNUSED(x) UNUSED_##x __attribute__((__unused__))
+#else
+#define UNUSED(x) UNUSED_##x
+#endif
 
 #define N(array) (sizeof(array) / sizeof(*array))
 
-void framebuffer_size_callback(GLFWwindow *window, int width, int height);
+static void framebuffer_size_callback(GLFWwindow *window, int width,
+                                      int height);
+static void cursor_position_callback(GLFWwindow *window, double x, double y);
 void processInput(GLFWwindow *window);
 
 GLuint SCR_WIDTH = 800;
@@ -37,18 +46,16 @@ glm::mat4 cube(1.0f);
 unsigned divisions = 100;
 
 void recalculate() {
-  glm::vec3 position(cos(camera_yrot) * sin(camera_xrot) * radius,
-                     sin(camera_yrot) * radius,
-                     cos(camera_yrot) * cos(camera_xrot) * radius);
-
+  // clang-format off
+  glm::vec3 position(
+    cos(camera_yrot) * sin(camera_xrot) * radius,
+    sin(camera_yrot) * radius,
+    cos(camera_yrot) * cos(camera_xrot) * radius);
+// clang-format off
   ProjectionMatrix = glm::perspective(
       glm::radians(70.0f), float(SCR_WIDTH) / float(SCR_HEIGHT), 0.1f, 1000.0f);
-
   ViewMatrix = glm::lookAt(position, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
-}
 
-float map(float x, float x1, float x2, float y1, float y2) {
-  return ((x - x1) / (x2 - x1)) * (y2 - y1) + y1;
 }
 
 int main() {
@@ -70,10 +77,11 @@ int main() {
   }
 
   glfwMakeContextCurrent(window);
+  // Set callbacks for input
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+  glfwSetCursorPosCallback(window, cursor_position_callback);
 
   // glad: load all OpenGL function pointers
-  // ---------------------------------------
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
     std::cout << "Failed to initialize GLAD" << std::endl;
     return -1;
@@ -87,259 +95,11 @@ int main() {
     Shader shader_prog = Shader("src/shaders/vert.vs", "src/shaders/frag.fs",
                                 "src/shaders/fourdee.gs");
 
-    //  glm::vec4 vertices[] = {
-    //    { 1,  1, -1,  1},
-    //    { 1,  1,  1,  1},
-    //    { 1, -1, -1,  1},
-    //    { 1, -1,  1,  1},
-    //    {-1,  1, -1,  1},
-    //    {-1,  1,  1,  1},
-    //    {-1, -1, -1,  1},
-    //    {-1, -1,  1,  1},
-    //
-    //    { 1,  1, -1, -1},
-    //    { 1,  1,  1, -1},
-    //    { 1, -1, -1, -1},
-    //    { 1, -1,  1, -1},
-    //    {-1,  1, -1, -1},
-    //    {-1,  1,  1, -1},
-    //    {-1, -1, -1, -1},
-    //    {-1, -1,  1, -1},
-    //  };
-
-    struct a {
-      float x, y, z, w, r, g, b;
-    };
-
     unsigned alloc_size = (16 * divisions * divisions) * sizeof(struct a);
 
     struct a *vertices = (struct a *)malloc(alloc_size);
 
-    unsigned n = 0;
-
-    for (unsigned i = 0; i < divisions; i++) {
-      for (unsigned j = 0; j < divisions; j++) {
-        vertices[n++] = (struct a){
-            .x = map(i, 0, divisions, +1, -1),
-            .y = +1,
-            .z = +1,
-            .w = map(j, 0, divisions, +1, -1),
-            .r = 0.7f,
-            .g = 0.1f,
-            .b = 0.6f,
-        };
-      }
-    }
-
-    for (unsigned i = 0; i < divisions; i++) {
-      for (unsigned j = 0; j < divisions; j++) {
-        vertices[n++] = (struct a){
-            .x = -1,
-            .y = +1,
-            .z = map(i, 0, divisions, +1, -1),
-            .w = map(j, 0, divisions, +1, -1),
-            .r = 0.7f,
-            .g = 0.2f,
-            .b = 0.4f,
-        };
-      }
-    }
-
-    for (unsigned i = 0; i < divisions; i++) {
-      for (unsigned j = 0; j < divisions; j++) {
-        vertices[n++] = (struct a){
-            .x = map(i, 0, divisions, +1, -1),
-            .y = +1,
-            .z = -1,
-            .w = map(j, 0, divisions, +1, -1),
-            .r = 0.3f,
-            .g = 0.5f,
-            .b = 0.4f,
-        };
-      }
-    }
-
-    for (unsigned i = 0; i < divisions; i++) {
-      for (unsigned j = 0; j < divisions; j++) {
-        vertices[n++] = (struct a){
-            .x = +1,
-            .y = +1,
-            .z = map(i, 0, divisions, -1, +1),
-            .w = map(j, 0, divisions, +1, -1),
-            .r = 0.8f,
-            .g = 0.8f,
-            .b = 0.4f,
-        };
-      }
-    }
-
-    for (unsigned i = 0; i < divisions; i++) {
-      for (unsigned j = 0; j < divisions; j++) {
-        vertices[n++] = (struct a){
-            .x = map(i, 0, divisions, +1, -1),
-            .y = map(j, 0, divisions, +1, -1),
-            .z = +1,
-            .w = -1,
-            .r = 0.5f,
-            .g = 0.8f,
-            .b = 0.4f,
-        };
-      }
-    }
-    //
-    for (unsigned i = 0; i < divisions; i++) {
-      for (unsigned j = 0; j < divisions; j++) {
-        vertices[n++] = (struct a){
-            .x = -1,
-            .y = map(j, 0, divisions, +1, -1),
-            .z = map(i, 0, divisions, +1, -1),
-            .w = -1,
-            .r = 0.9f,
-            .g = 0.8f,
-            .b = 0.4f,
-        };
-      }
-    }
-
-    for (unsigned i = 0; i < divisions; i++) {
-      for (unsigned j = 0; j < divisions; j++) {
-        vertices[n++] = (struct a){
-            .x = map(i, 0, divisions, -1, +1),
-            .y = map(j, 0, divisions, +1, -1),
-            .z = -1,
-            .w = -1,
-            .r = 0.1f,
-            .g = 0.4f,
-            .b = 0.4f,
-        };
-      }
-    }
-
-    for (unsigned i = 0; i < divisions; i++) {
-      for (unsigned j = 0; j < divisions; j++) {
-        vertices[n++] = (struct a){
-            .x = +1,
-            .y = map(j, 0, divisions, +1, -1),
-            .z = map(i, 0, divisions, -1, +1),
-            .w = -1,
-            .r = 0.1f,
-            .g = 0.4f,
-            .b = 0.8f,
-        };
-      }
-    }
-
-    for (unsigned i = 0; i < divisions; i++) {
-      for (unsigned j = 0; j < divisions; j++) {
-        vertices[n++] = (struct a){
-            .x = map(i, 0, divisions, +1, -1),
-            .y = -1,
-            .z = +1,
-            .w = map(j, 0, divisions, -1, +1),
-            .r = 0.1f,
-            .g = 0.4f,
-            .b = 0.8f,
-        };
-      }
-    }
-
-    for (unsigned i = 0; i < divisions; i++) {
-      for (unsigned j = 0; j < divisions; j++) {
-        vertices[n++] = (struct a){
-            .x = -1,
-            .y = -1,
-            .z = map(i, 0, divisions, +1, -1),
-            .w = map(j, 0, divisions, -1, +1),
-            .r = 0.6f,
-            .g = 0.4f,
-            .b = 0.7f,
-        };
-      }
-    }
-
-    for (unsigned i = 0; i < divisions; i++) {
-      for (unsigned j = 0; j < divisions; j++) {
-        vertices[n++] = (struct a){
-            .x = map(i, 0, divisions, -1, +1),
-            .y = -1,
-            .z = -1,
-            .w = map(j, 0, divisions, -1, +1),
-            .r = 0.9f,
-            .g = 0.2f,
-            .b = 0.3f,
-        };
-      }
-    }
-
-    for (unsigned i = 0; i < divisions; i++) {
-      for (unsigned j = 0; j < divisions; j++) {
-        vertices[n++] = (struct a){
-            .x = +1,
-            .y = -1,
-            .z = map(i, 0, divisions, -1, +1),
-            .w = map(j, 0, divisions, -1, +1),
-            .r = 0.5f,
-            .g = 0.5f,
-            .b = 0.8f,
-        };
-      }
-    }
-
-    for (unsigned i = 0; i < divisions; i++) {
-      for (unsigned j = 0; j < divisions; j++) {
-        vertices[n++] = (struct a){
-            .x = map(i, 0, divisions, +1, -1),
-            .y = map(j, 0, divisions, -1, +1),
-            .z = +1,
-            .w = +1,
-            .r = 0.1f,
-            .g = 0.5f,
-            .b = 0.8f,
-        };
-      }
-    }
-
-    for (unsigned i = 0; i < divisions; i++) {
-      for (unsigned j = 0; j < divisions; j++) {
-        vertices[n++] = (struct a){
-            .x = -1,
-            .y = map(j, 0, divisions, -1, +1),
-            .z = map(i, 0, divisions, +1, -1),
-            .w = +1,
-            .r = 0.8f,
-            .g = 0.2f,
-            .b = 0.8f,
-        };
-      }
-    }
-
-    for (unsigned i = 0; i < divisions; i++) {
-      for (unsigned j = 0; j < divisions; j++) {
-        vertices[n++] = (struct a){
-            .x = map(i, 0, divisions, -1, +1),
-            .y = map(j, 0, divisions, -1, +1),
-            .z = -1,
-            .w = +1,
-            .r = 0.8f,
-            .g = 0.7f,
-            .b = 0.8f,
-        };
-      }
-    }
-
-    for (unsigned i = 0; i < divisions; i++) {
-      for (unsigned j = 0; j < divisions; j++) {
-        vertices[n++] = (struct a){
-            .x = +1,
-            .y = map(j, 0, divisions, -1, +1),
-            .z = map(i, 0, divisions, -1, +1),
-            .w = +1,
-            .r = 0.2f,
-            .g = 0.3f,
-            .b = 0.8f,
-        };
-      }
-    }
+    unsigned n = push_points(divisions, vertices);
 
     GLuint VBO, VAO;
 
@@ -369,6 +129,7 @@ int main() {
     // Incase we have more VAO's unbind
     glBindVertexArray(0);
 
+    // Must set `ProjectionMatrix` and `ViewMatrix` to something based on size of window
     recalculate();
 
     while (!glfwWindowShouldClose(window)) {
@@ -383,9 +144,7 @@ int main() {
       shader_prog.setMat4("cube", cube);
 
       glm::mat4 MVP = ProjectionMatrix * ViewMatrix;
-
       shader_prog.setMat4("MVP", MVP);
-      //		glUniformMatrix4fv(MPVID, 1, GL_FALSE, &MVP[0][0]);
 
       // Draw
       shader_prog.activate();
@@ -419,43 +178,57 @@ void processInput(GLFWwindow *window) {
     glfwSetWindowShouldClose(window, true);
 
   if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-    float cube_xwrot = -0.1;
+    float cube_xwrot = -0.01;
 
-    cube = glm::mat4(glm::cos(cube_xwrot), 0.0f, 0.0f, -glm::sin(cube_xwrot),
-                     0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-                     glm::sin(cube_xwrot), 0.0f, 0.0f, glm::cos(cube_xwrot)) *
-           cube;
+// clang-format off
+    cube = glm::mat4(
+        glm::cos(cube_xwrot), 0.0f, 0.0f, -glm::sin(cube_xwrot),
+        0.0f,                 1.0f, 0.0f,                  0.0f,
+        0.0f,                 0.0f, 1.0f,                  0.0f,
+        glm::sin(cube_xwrot), 0.0f, 0.0f,  glm::cos(cube_xwrot)
+    ) * cube;
+    // clang-format on
   }
 
   if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-    float cube_xwrot = +0.1;
+    float cube_xwrot = +0.01;
 
-    cube = glm::mat4(glm::cos(cube_xwrot), 0.0f, 0.0f, -glm::sin(cube_xwrot),
-                     0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-                     glm::sin(cube_xwrot), 0.0f, 0.0f, glm::cos(cube_xwrot)) *
-           cube;
+    // clang-format off
+    cube = glm::mat4(
+        glm::cos(cube_xwrot), 0.0f, 0.0f, -glm::sin(cube_xwrot),
+        0.0f,                 1.0f, 0.0f,                  0.0f,
+        0.0f,                 0.0f, 1.0f,                  0.0f,
+        glm::sin(cube_xwrot), 0.0f, 0.0f,  glm::cos(cube_xwrot)
+    ) * cube;
+    // clang-format on
   }
 
   if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-    float cube_ywrot = +0.1;
+    float cube_ywrot = +0.01;
 
-    cube = glm::mat4(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, glm::cos(cube_ywrot), 0.0f,
-                     -glm::sin(cube_ywrot), 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
-                     glm::sin(cube_ywrot), 0.0f, glm::cos(cube_ywrot)) *
-           cube;
+    // clang-format off
+    cube = glm::mat4(
+        1.0f,                 0.0f, 0.0f,                  0.0f,
+        0.0f, glm::cos(cube_ywrot), 0.0f, -glm::sin(cube_ywrot),
+        0.0f,                 0.0f, 1.0f,                  0.0f,
+        0.0f, glm::sin(cube_ywrot), 0.0f,  glm::cos(cube_ywrot)
+    ) * cube;
+    // clang-format on
   }
 
   if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-    float cube_ywrot = -0.1;
-
-    cube = glm::mat4(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, glm::cos(cube_ywrot), 0.0f,
-                     -glm::sin(cube_ywrot), 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
-                     glm::sin(cube_ywrot), 0.0f, glm::cos(cube_ywrot)) *
-           cube;
+    float cube_ywrot = -0.01;
+    // clang-format off
+    cube = glm::mat4(
+        1.0f,                 0.0f, 0.0f,                  0.0f,
+        0.0f, glm::cos(cube_ywrot), 0.0f, -glm::sin(cube_ywrot),
+        0.0f,                 0.0f, 1.0f,                  0.0f,
+        0.0f, glm::sin(cube_ywrot), 0.0f,  glm::cos(cube_ywrot)
+    ) * cube;
+    // clang-format on
   }
 
   float old_camera_xrot = camera_xrot, old_camera_yrot = camera_yrot;
-
   if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS)
     camera_xrot -= 0.01;
   if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
@@ -480,12 +253,76 @@ void processInput(GLFWwindow *window) {
   }
 }
 
+bool L_PRESS = false;
+bool R_PRESS = false;
+double START_CAMERA_X;
+double START_CAMERA_Y;
+double START_MOUSE_X;
+double START_MOUSE_Y;
+glm::mat4 START_CUBE;
+
+static void cursor_position_callback(GLFWwindow *window, double xpos,
+                                     double ypos) {
+  if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS &&
+      !R_PRESS) {
+    R_PRESS = true;
+    START_CAMERA_X = camera_xrot;
+    START_CAMERA_Y = camera_yrot;
+
+    START_MOUSE_X = xpos;
+    START_MOUSE_Y = ypos;
+  } else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) ==
+                 GLFW_RELEASE &&
+             R_PRESS) {
+    R_PRESS = false;
+  }
+
+  if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && !L_PRESS) {
+    L_PRESS = true;
+    START_CUBE = cube;
+
+    START_MOUSE_X = xpos;
+    START_MOUSE_Y = ypos;
+  } else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) ==
+                 GLFW_RELEASE &&
+             L_PRESS) {
+    L_PRESS = false;
+  }
+
+  if (R_PRESS) {
+    camera_xrot = START_CAMERA_X +
+                  map(xpos - START_MOUSE_X, 0, SCR_WIDTH, 0, -(2.0f * M_PI));
+    camera_yrot = START_CAMERA_Y +
+                  map(ypos - START_MOUSE_Y, 0, SCR_HEIGHT, 0, 2.0f * M_PI);
+    recalculate();
+  }
+
+  if (L_PRESS) {
+    float delta_x = map(xpos - START_MOUSE_X, 0, SCR_WIDTH, 0, -(2.0f * M_PI));
+    float delta_y = map(ypos - START_MOUSE_Y, 0, SCR_HEIGHT, 0, 2.0f * M_PI);
+    // clang-format off
+    cube = glm::mat4(
+        glm::cos(delta_x), 0.0f, 0.0f, -glm::sin(delta_x),
+                     0.0f, 1.0f, 0.0f,               0.0f,
+                     0.0f, 0.0f, 1.0f,               0.0f,
+        glm::sin(delta_x), 0.0f, 0.0f,  glm::cos(delta_x)
+    ) * START_CUBE;
+
+    cube = glm::mat4(
+        1.0f,              0.0f, 0.0f,               0.0f,
+        0.0f, glm::cos(delta_y), 0.0f, -glm::sin(delta_y),
+        0.0f,              0.0f, 1.0f,               0.0f,
+        0.0f, glm::sin(delta_y), 0.0f,  glm::cos(delta_y)
+    ) * cube;
+    // clang-format on
+  }
+}
+
 // If the window has changed size. This is registered with GLFW.
-void framebuffer_size_callback(GLFWwindow *window, int new_width,
-                               int new_height) {
+static void framebuffer_size_callback(GLFWwindow *UNUSED(window), int new_width,
+                                      int new_height) {
   // make sure the viewport matches the new window dimensions; note that width
   // and height will be significantly larger than specified on retina displays.
-
   SCR_WIDTH = new_width;
   SCR_HEIGHT = new_height;
 
