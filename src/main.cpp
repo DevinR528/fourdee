@@ -1,4 +1,4 @@
-// These have to be included before GLFW or any other gl* libraries
+// glad has to be included before GLFW or any other gl* libraries
 #include "glad/glad.h"
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
@@ -9,6 +9,7 @@
 
 #include "points.hpp"
 #include "shader.hpp"
+#include "text.hpp"
 
 #ifdef __GNUC__
 #define UNUSED(x) UNUSED_##x __attribute__((__unused__))
@@ -24,7 +25,7 @@ static void cursor_position_callback(GLFWwindow *window, double x, double y);
 void processInput(GLFWwindow *window);
 
 GLuint SCR_WIDTH = 800;
-GLuint SCR_HEIGHT = 600;
+GLuint SCR_HEIGHT = 800;
 
 float camera_xrot = 0.0;
 float camera_yrot = 0.0;
@@ -59,7 +60,7 @@ void recalculate() {
 }
 
 int main() {
-  // initialize and configure
+  // Initialize and configure openGL using GLFW
   glfwInit();
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -90,7 +91,14 @@ int main() {
   printf("Renderer: %s\n", glGetString(GL_RENDERER));
   printf("OpenGL version supported %s\n", glGetString(GL_VERSION));
 
+  // Initialize dumb fonts...
+  std::map<u_char, Character> char_map;
+  if (init_fonts(char_map) != 0) {
+    return -1;
+  }
+
   {
+    Shader text_shader = Shader("src/shaders/text.vs", "src/shaders/text.fs");
 
     Shader shader_prog = Shader("src/shaders/vert.vs", "src/shaders/frag.fs",
                                 "src/shaders/fourdee.gs");
@@ -101,26 +109,25 @@ int main() {
 
     unsigned n = push_points(divisions, vertices);
 
-    GLuint VBO, VAO;
+    size_t text_vertices = sizeof(float) * 6 * 4;
+    // We got buffers for our points and for text now
+    GLuint VBO, VAO, TBO, TAO;
 
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
     // bind the Vertex Array Object first, then bind and set vertex buffer(s),
     // and then configure vertex attributes(s).
     glBindVertexArray(VAO);
-
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, alloc_size, vertices, GL_STATIC_DRAW);
-
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(struct a), nullptr);
-
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(struct a),
                           (void *)(sizeof(float) * 4));
 
+    // Enable openGL stuff for points to work
     glEnable(GL_PROGRAM_POINT_SIZE);
-
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
 
@@ -128,6 +135,22 @@ int main() {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     // Incase we have more VAO's unbind
     glBindVertexArray(0);
+
+    // Now create text buffers... maybe
+    glGenVertexArrays(1, &TAO);
+    glGenBuffers(1, &TBO);
+    glBindVertexArray(TAO);
+    glBindBuffer(GL_ARRAY_BUFFER, TBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    // Enable openGL stuff for text to work
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Must set `ProjectionMatrix` and `ViewMatrix` to something based on size of window
     recalculate();
@@ -138,23 +161,27 @@ int main() {
       // Render
       glClearColor(0.0, 0.0, 0.0, 1.0);
       glClear(GL_COLOR_BUFFER_BIT);
-
       glClear(GL_DEPTH_BUFFER_BIT);
 
+      shader_prog.activate();
       shader_prog.setMat4("cube", cube);
-
       glm::mat4 MVP = ProjectionMatrix * ViewMatrix;
       shader_prog.setMat4("MVP", MVP);
 
-      // Draw
-      shader_prog.activate();
-
-      // Could only bind once but a more complicated prog might have multiple
-      // VAO's
       glBindVertexArray(VAO);
-
       // Do the damn thang
       glDrawArrays(GL_POINTS, 0, n);
+
+    //   glBindVertexArray(0);
+      // clang-format off
+      render_text(
+        char_map,
+        text_shader, TAO, TBO,
+        "Hey Zander!!", SCR_HEIGHT, SCR_WIDTH,
+        600.0f, 770.0f, 0.5f,
+        glm::vec3(0.3f, 0.7f, 0.9f)
+      );
+      // clang-format on
 
       // Swap buffers and poll IO events to ready for next go round
       glfwSwapBuffers(window);
@@ -180,7 +207,7 @@ void processInput(GLFWwindow *window) {
   if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
     float cube_xwrot = -0.01;
 
-// clang-format off
+    // clang-format off
     cube = glm::mat4(
         glm::cos(cube_xwrot), 0.0f, 0.0f, -glm::sin(cube_xwrot),
         0.0f,                 1.0f, 0.0f,                  0.0f,
@@ -277,7 +304,8 @@ static void cursor_position_callback(GLFWwindow *window, double xpos,
     R_PRESS = false;
   }
 
-  if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && !L_PRESS) {
+  if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS &&
+      !L_PRESS) {
     L_PRESS = true;
     START_CUBE = cube;
 

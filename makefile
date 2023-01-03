@@ -6,7 +6,10 @@ CC ?= gcc
 buildtype ?= release
 
 CPPFLAGS += -Wfatal-errors
-CPPFLAGS += -I ./src -I ./includes
+
+CPPFLAGS += -I ./src
+CPPFLAGS += -I /usr/include/freetype2
+CPPFLAGS += -I ./includes
 
 CXXFLAGS += -Wall -Wextra -Werror
 CXXFLAGS += -std=c++2a
@@ -17,7 +20,7 @@ CPPFLAGS += -D RELEASE
 CXXFLAGS += -O2
 CXXFLAGS += -flto
 
-LDFLAGS += -static
+# LDFLAGS += -static
 else
 CPPFLAGS += -D DEBUGGING
 CXXFLAGS += -O0
@@ -27,7 +30,7 @@ CXXFLAGS += -Wno-unused-function
 CXXFLAGS += -Wno-unused-parameter
 endif
 
-LDLIBS += -lstdc++ -lGL -lglfw -lm
+LDLIBS += -lstdc++ -lGL -lglfw -lm -lfreetype
 
 on_error ?= do_nothing
 
