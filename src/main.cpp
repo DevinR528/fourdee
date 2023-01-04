@@ -5,6 +5,7 @@
 #include "glm/gtc/type_ptr.hpp"
 
 #include <GLFW/glfw3.h>
+#include <chrono>
 #include <iostream>
 
 #include "points.hpp"
@@ -29,6 +30,7 @@ GLuint SCR_HEIGHT = 800;
 
 float camera_xrot = 0.0;
 float camera_yrot = 0.0;
+float camera_zrot = 0.0;
 
 float cube_xwrot = 0.0;
 float cube_ywrot = 0.0;
@@ -37,7 +39,6 @@ float radius = 4;
 
 // float tra_x = 0.0;
 // float tra_y = 0.0;
-// float tra_z = 0.0;
 
 glm::mat4 ViewMatrix;
 glm::mat4 ProjectionMatrix;
@@ -49,9 +50,9 @@ unsigned divisions = 100;
 void recalculate() {
   // clang-format off
   glm::vec3 position(
-    cos(camera_yrot) * sin(camera_xrot) * radius,
-    sin(camera_yrot) * radius,
-    cos(camera_yrot) * cos(camera_xrot) * radius);
+    cos(camera_yrot) * sin(camera_xrot) * (radius + camera_zrot),
+    sin(camera_yrot) * (radius + camera_zrot),
+    cos(camera_yrot) * cos(camera_xrot) * (radius + camera_zrot));
 // clang-format off
   ProjectionMatrix = glm::perspective(
       glm::radians(70.0f), float(SCR_WIDTH) / float(SCR_HEIGHT), 0.1f, 1000.0f);
@@ -72,7 +73,7 @@ int main() {
   GLFWwindow *window =
       glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "ForDee", NULL, NULL);
   if (window == NULL) {
-    std::cout << "Failed to create GLFW window" << std::endl;
+    std::cout << "Failed to create GLFW window\n";
     glfwTerminate();
     return -1;
   }
@@ -84,7 +85,7 @@ int main() {
 
   // glad: load all OpenGL function pointers
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-    std::cout << "Failed to initialize GLAD" << std::endl;
+    std::cout << "Failed to initialize GLAD\n";
     return -1;
   }
 
@@ -99,7 +100,6 @@ int main() {
 
   {
     Shader text_shader = Shader("src/shaders/text.vs", "src/shaders/text.fs");
-
     Shader shader_prog = Shader("src/shaders/vert.vs", "src/shaders/frag.fs",
                                 "src/shaders/fourdee.gs");
 
@@ -155,7 +155,21 @@ int main() {
     // Must set `ProjectionMatrix` and `ViewMatrix` to something based on size of window
     recalculate();
 
+    namespace chrono = std::chrono;
+    typedef chrono::high_resolution_clock high_res;
+    auto one_sec = chrono::seconds(1);
+    auto time = high_res::now();
+    int fps = 0;
+    std::string fps_str;
     while (!glfwWindowShouldClose(window)) {
+      auto curr = chrono::duration_cast<chrono::seconds>(high_res::now() - time);
+      if (curr >= one_sec) {
+        time = high_res::now();
+        fps_str = std::to_string(fps);
+        fps = 0;
+      }
+      fps++;
+
       processInput(window);
 
       // Render
@@ -177,8 +191,17 @@ int main() {
       render_text(
         char_map,
         text_shader, TAO, TBO,
-        "Hey Zander!!", SCR_HEIGHT, SCR_WIDTH,
+        fps_str + " fps",
+        SCR_HEIGHT, SCR_WIDTH,
         600.0f, 770.0f, 0.5f,
+        glm::vec3(0.3f, 0.7f, 0.9f)
+      );
+      render_text(
+        char_map,
+        text_shader, TAO, TBO,
+        "camera x: " + std::to_string((int)camera_xrot) + " camera y: " + std::to_string((int)camera_yrot),
+        SCR_HEIGHT, SCR_WIDTH,
+        450.0f, 750.0f, 0.5f,
         glm::vec3(0.3f, 0.7f, 0.9f)
       );
       // clang-format on
@@ -255,7 +278,8 @@ void processInput(GLFWwindow *window) {
     // clang-format on
   }
 
-  float old_camera_xrot = camera_xrot, old_camera_yrot = camera_yrot;
+  float old_camera_xrot = camera_xrot, old_camera_yrot = camera_yrot,
+        old_camera_zrot = camera_zrot;
   if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS)
     camera_xrot -= 0.01;
   if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
@@ -264,18 +288,21 @@ void processInput(GLFWwindow *window) {
     camera_yrot += 0.01;
   if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS)
     camera_xrot += 0.01;
-
-  //  if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) tra_z -= 0.1;
-  //  if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) tra_z += 0.1;
+  if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+    camera_zrot -= 0.1;
+  if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+    camera_zrot += 0.1;
 
   if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
     cube = glm::mat4(1.0);
     camera_xrot = 0.0;
     camera_yrot = 0.0;
-    //    tra_x = 0.0; tra_y = 0.0; tra_z = 0.0;
+    camera_zrot = 0.0;
+    //    tra_x = 0.0; tra_y = 0.0;
   }
 
-  if (old_camera_xrot != camera_xrot || old_camera_yrot != camera_yrot) {
+  if (old_camera_xrot != camera_xrot || old_camera_yrot != camera_yrot ||
+      old_camera_zrot != camera_zrot) {
     recalculate();
   }
 }

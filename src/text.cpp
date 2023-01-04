@@ -80,7 +80,7 @@ void render_text(
   shader.activate();
   shader.setMat4("projection", glm::ortho(0.0f, height, 0.0f, width));
   glUniform3f(
-    glGetUniformLocation(shader.prog_id(), "textColor"),
+    glGetUniformLocation(shader.prog_id(), "text_color"),
     color.x, color.y, color.z
   );
   glActiveTexture(GL_TEXTURE0);
@@ -108,8 +108,8 @@ void render_text(
     glBindTexture(GL_TEXTURE_2D, ch.texture_id);
     // update content of VBO memory
     glBindBuffer(GL_ARRAY_BUFFER, tbo);
-    // glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, vertices, GL_DYNAMIC_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+    // glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, vertices, GL_DYNAMIC_DRAW);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     // render quad
