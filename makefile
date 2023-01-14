@@ -85,6 +85,7 @@ distclean: clean
 	# Let me keep my vscode project level config
 	for l in $$(cat .gitignore); do if [ $$l != ".vscode" ]; then rm -rf $$l; fi done
 
+include $(patsubst %.cpp,$(buildprefix)/%.d,$(srcs))
 
 
 

@@ -50,9 +50,9 @@ unsigned divisions = 100;
 void recalculate() {
   // clang-format off
   glm::vec3 position(
-    cos(camera_yrot) * sin(camera_xrot) * (radius + camera_zrot),
-    sin(camera_yrot) * (radius + camera_zrot),
-    cos(camera_yrot) * cos(camera_xrot) * (radius + camera_zrot));
+    cos(camera_yrot) * sin(camera_xrot) * (radius),
+    sin(camera_yrot) * (radius),
+    cos(camera_yrot) * cos(camera_xrot) * (radius));
 // clang-format off
   ProjectionMatrix = glm::perspective(
       glm::radians(70.0f), float(SCR_WIDTH) / float(SCR_HEIGHT), 0.1f, 1000.0f);
@@ -67,7 +67,7 @@ int main() {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
-
+  glfwWindowHint(GLFW_SAMPLES, 4);
   // glfw window creation
   // --------------------
   GLFWwindow *window =
@@ -130,6 +130,7 @@ int main() {
     glEnable(GL_PROGRAM_POINT_SIZE);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
+    glEnable(GL_MULTISAMPLE);
 
     // This is already registered so we can unbind it
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -181,9 +182,86 @@ int main() {
       shader_prog.setMat4("cube", cube);
       glm::mat4 MVP = ProjectionMatrix * ViewMatrix;
       shader_prog.setMat4("MVP", MVP);
+      glm::vec4 trans = glm::vec4(0);
+      shader_prog.setVec4("translation", trans);
 
       glBindVertexArray(VAO);
       // Do the damn thang
+
+      #define Q (1.75)
+
+      trans = glm::vec4(0, 0, 0, -Q);
+      shader_prog.setVec4("translation", trans);
+      glDrawArrays(GL_POINTS, 0, n);
+
+      trans = glm::vec4(0, 0, 0, Q);
+      shader_prog.setVec4("translation", trans);
+      glDrawArrays(GL_POINTS, 0, n);
+
+      trans = glm::vec4(0, 0, 0, -Q);
+      shader_prog.setVec4("translation", trans);
+      glm::mat4 newcube = cube * glm::mat4(
+         1,  0,  0,  0,
+         0,  0,  0,  1,
+         0,  0,  1,  0,
+         0,  -1,  0,  0
+      );
+      shader_prog.setMat4("cube", newcube);
+      glDrawArrays(GL_POINTS, 0, n);
+
+      trans = glm::vec4(0, 0, 0, -Q);
+      shader_prog.setVec4("translation", trans);
+      newcube = cube * glm::mat4(
+         1,  0,  0,  0,
+         0,  0,  0, -1,
+         0,  0,  1,  0,
+         0,  1,  0,  0
+      );
+      shader_prog.setMat4("cube", newcube);
+      glDrawArrays(GL_POINTS, 0, n);
+
+      trans = glm::vec4(0, 0, 0, -Q);
+      shader_prog.setVec4("translation", trans);
+      newcube = cube * glm::mat4(
+         0,  0,  0, -1,
+         0,  1,  0,  0,
+         0,  0,  1,  0,
+         1,  0,  0,  0
+      );
+      shader_prog.setMat4("cube", newcube);
+      glDrawArrays(GL_POINTS, 0, n);
+
+      trans = glm::vec4(0, 0, 0, -Q);
+      shader_prog.setVec4("translation", trans);
+      newcube = cube * glm::mat4(
+         0,  0,  0, 1,
+         0,  1,  0,  0,
+         0,  0,  1,  0,
+         -1,  0,  0,  0
+      );
+      shader_prog.setMat4("cube", newcube);
+      glDrawArrays(GL_POINTS, 0, n);
+
+      trans = glm::vec4(0, 0, 0, -Q);
+      shader_prog.setVec4("translation", trans);
+      newcube = cube * glm::mat4(
+         1,  0,  0,  0,
+         0,  1,  0,  0,
+         0,  0,  0, -1,
+         0,  0,  1,  0
+      );
+      shader_prog.setMat4("cube", newcube);
+      glDrawArrays(GL_POINTS, 0, n);
+
+      trans = glm::vec4(0, 0, 0, -Q);
+      shader_prog.setVec4("translation", trans);
+      newcube = cube * glm::mat4(
+         1,  0,  0,  0,
+         0,  1,  0,  0,
+         0,  0,  0,  1,
+         0,  0, -1,  0
+      );
+      shader_prog.setMat4("cube", newcube);
       glDrawArrays(GL_POINTS, 0, n);
 
     //   glBindVertexArray(0);
@@ -279,7 +357,7 @@ void processInput(GLFWwindow *window) {
   }
 
   float old_camera_xrot = camera_xrot, old_camera_yrot = camera_yrot,
-        old_camera_zrot = camera_zrot;
+        old_radius = radius;
   if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS)
     camera_xrot -= 0.01;
   if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
@@ -289,20 +367,20 @@ void processInput(GLFWwindow *window) {
   if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS)
     camera_xrot += 0.01;
   if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-    camera_zrot -= 0.1;
+    radius /= 1.02;
   if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-    camera_zrot += 0.1;
+    radius *= 1.02;
 
   if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
     cube = glm::mat4(1.0);
     camera_xrot = 0.0;
     camera_yrot = 0.0;
-    camera_zrot = 0.0;
+    radius = 4.0;
     //    tra_x = 0.0; tra_y = 0.0;
   }
 
   if (old_camera_xrot != camera_xrot || old_camera_yrot != camera_yrot ||
-      old_camera_zrot != camera_zrot) {
+      old_radius != radius) {
     recalculate();
   }
 }
